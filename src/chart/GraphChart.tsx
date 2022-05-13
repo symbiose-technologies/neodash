@@ -59,9 +59,11 @@ const NeoGraphChart = (props: ChartProps) => {
         return <>No data, re-run the report.</>
     }
 
+
     const [open, setOpen] = React.useState(false);
     const [firstRun, setFirstRun] = React.useState(true);
     const [inspectItem, setInspectItem] = React.useState({});
+    const [allNodes, setNodes] = React.useState(props.records);
 
     const handleOpen = () => {
         setOpen(true);
@@ -93,7 +95,7 @@ const NeoGraphChart = (props: ChartProps) => {
     const lockable = props.settings && props.settings.lockable !== undefined ? props.settings.lockable : true;
     const drilldownLink = props.settings && props.settings.drilldownLink !== undefined ? props.settings.drilldownLink : "";
     const selfLoopRotationDegrees = 45;
-    const rightClickToExpandNodes = false; // TODO - this isn't working properly yet, disable it.
+    const rightClickToExpandNodes = true; // TODO - this isn't working properly yet, disable it.
     const defaultNodeColor = "lightgrey"; // Color of nodes without labels
     const linkDirectionalParticles = props.settings && props.settings.relationshipParticles ? 5 : undefined;
     const linkDirectionalParticleSpeed = 0.005; // Speed of particles on relationships.
@@ -112,6 +114,7 @@ const NeoGraphChart = (props: ChartProps) => {
 
     const [data, setData] = React.useState({ nodes: [], links: [] });
 
+
     // Create the dictionary used for storing the memory of dragged node positions.
     if (props.settings.nodePositions == undefined) {
         props.settings.nodePositions = {};
@@ -123,10 +126,11 @@ const NeoGraphChart = (props: ChartProps) => {
 
     // Currently unused, but dynamic graph exploration could be done with these records.
     const [extraRecords, setExtraRecords] = React.useState([]);
+    const [removeExtraRecords, setRemoveExtraRecords] = React.useState([]);
 
     // When data is refreshed, rebuild the visualization data.
     useEffect(() => {
-        buildVisualizationDictionaryFromRecords(props.records);
+        buildVisualizationDictionaryFromRecords(allNodes);
     }, [])
 
     const { observe, unobserve, width, height, entry } = useDimensions({
@@ -319,10 +323,13 @@ const NeoGraphChart = (props: ChartProps) => {
     }
 
     // TODO - implement this.
-    const handleExpand = useCallback(node => {
-        if (rightClickToExpandNodes) {
-            props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN e,m", {}, setExtraRecords);
-        }
+    const handleExpand = useCallback((node, e) => {
+        if (rightClickToExpandNodes)
+            if(e.ctrlKey)
+                props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN e,m", {}, setRemoveExtraRecords);
+            else
+                props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN e,m", {}, setExtraRecords);
+
     }, []);
 
     const showPopup = useCallback(item => {
@@ -332,20 +339,23 @@ const NeoGraphChart = (props: ChartProps) => {
         }
     }, []);
 
-    const showPopup2 = useCallback(item => {
-        if (showPropertiesOnClick) {
-            setInspectItem(item);
-            handleOpen();
-        }
-    }, []);
 
     // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
     useEffect(() => {
-        buildVisualizationDictionaryFromRecords(props.records.concat(extraRecords));
+        setNodes(allNodes.concat(extraRecords));
     }, [extraRecords])
 
-    const { useRef } = React;
+    // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
+    useEffect(() => {
+        setNodes(allNodes.filter( ( el ) => !removeExtraRecords.includes( el ) ));
+    }, [removeExtraRecords])
 
+    // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
+    useEffect(() => {
+        buildVisualizationDictionaryFromRecords(allNodes);
+    }, [allNodes])
+
+    const { useRef } = React;
     // Return the actual graph visualization component with the parsed data and selected customizations.
     const fgRef = useRef();
     return <>
@@ -387,6 +397,8 @@ const NeoGraphChart = (props: ChartProps) => {
             </a> : <></>}
 
             <ForceGraph2D
+
+                {...bindContextMenu(popupState)}
                 ref={fgRef}
                 width={width ? width - 10 : 0}
                 height={height ? height - 10 : 0}
@@ -403,6 +415,8 @@ const NeoGraphChart = (props: ChartProps) => {
                 // nodeThreeObject = {nodeTree}
                 onLinkClick={showPopup}
                 onNodeRightClick={handleExpand}
+                //onNodeRightClick={popupState.open}
+
                 linkDirectionalParticles={linkDirectionalParticles}
                 linkDirectionalParticleSpeed={d => linkDirectionalParticleSpeed}
                 cooldownTicks={100}
