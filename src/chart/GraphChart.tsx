@@ -149,12 +149,12 @@ const NeoGraphChart = (props: ChartProps) => {
     var linkTypes = {};
 
     // Gets all graphy objects (nodes/relationships) from the complete set of return values.
-    function extractGraphEntitiesFromField(value) {
+    function extractGraphEntitiesFromField(value, actionAdd :boolean) {
         if (value == undefined) {
             return
         }
         if (valueIsArray(value)) {
-            value.forEach((v, i) => extractGraphEntitiesFromField(v));
+            value.forEach((v, i) => extractGraphEntitiesFromField(v, actionAdd));
         } else if (valueIsNode(value)) {
             value.labels.forEach(l => nodeLabels[l] = true)
             nodes[value.identity.low] = {
@@ -185,9 +185,9 @@ const NeoGraphChart = (props: ChartProps) => {
 
         } else if (valueIsPath(value)) {
             value.segments.map((segment, i) => {
-                extractGraphEntitiesFromField(segment.start);
-                extractGraphEntitiesFromField(segment.relationship);
-                extractGraphEntitiesFromField(segment.end);
+                extractGraphEntitiesFromField(segment.start, actionAdd);
+                extractGraphEntitiesFromField(segment.relationship, actionAdd);
+                extractGraphEntitiesFromField(segment.end, actionAdd);
             });
         }
     }
@@ -218,11 +218,15 @@ const NeoGraphChart = (props: ChartProps) => {
         return arr1.concat(arr2).concat(arr3)[index];
     }
 
-    function buildVisualizationDictionaryFromRecords(records) {
+    function buildVisualizationDictionaryFromRecords(records, action) {
+
+        if (records.length ===0)
+            return;
+
         // Extract graph objects from result set.
         records.forEach((record, rownumber) => {
             record._fields.forEach((field, i) => {
-                extractGraphEntitiesFromField(field);
+                extractGraphEntitiesFromField(field, action);
             })
         });
         // Assign proper curvatures to relationships.
@@ -260,11 +264,15 @@ const NeoGraphChart = (props: ChartProps) => {
             return update(node, { color: assignedColor ? assignedColor : defaultNodeColor });
         });
 
+        update(nodes, data.nodes);
+        update(links, data.links);
         // Set the data dictionary that is read by the visualization.
         setData({
             nodes: nodesList,
             links: linksList.flat()
         });
+
+        //setNodes([]);
     }
 
     // Replaces all global dashboard parameters inside a string with their values.
@@ -326,7 +334,7 @@ const NeoGraphChart = (props: ChartProps) => {
     const handleExpand = useCallback((node, e) => {
         if (rightClickToExpandNodes)
             if(e.ctrlKey)
-                props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN e,m", {}, setRemoveExtraRecords);
+                props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN n,e,m", {}, setRemoveExtraRecords);
             else
                 props.queryCallback && props.queryCallback("MATCH (n)-[e]-(m) WHERE id(n) =" + node.id + " RETURN e,m", {}, setExtraRecords);
 
@@ -342,17 +350,27 @@ const NeoGraphChart = (props: ChartProps) => {
 
     // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
     useEffect(() => {
-        setNodes(allNodes.concat(extraRecords));
+        buildVisualizationDictionaryFromRecords(extraRecords, true);
+        //setNodes(allNodes.concat(extraRecords));
     }, [extraRecords])
 
     // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
     useEffect(() => {
-        setNodes(allNodes.filter( ( el ) => !removeExtraRecords.includes( el ) ));
+        /*removeExtraRecords.forEach((record, rownumber) => {
+            record._fields.forEach((value, i) => {
+                let id
+            }
+                if (valueIsNode(value)) {
+
+                }
+            })*/
+        buildVisualizationDictionaryFromRecords(removeExtraRecords, false);
+        //setNodes(allNodes.filter( ( el ) => !removeExtraRecords.includes( el ) ));
     }, [removeExtraRecords])
 
     // If the set of extra records gets updated (e.g. on relationship expand), rebuild the graph.
     useEffect(() => {
-        buildVisualizationDictionaryFromRecords(allNodes);
+        buildVisualizationDictionaryFromRecords(allNodes, true);
     }, [allNodes])
 
     const { useRef } = React;
@@ -397,8 +415,6 @@ const NeoGraphChart = (props: ChartProps) => {
             </a> : <></>}
 
             <ForceGraph2D
-
-                {...bindContextMenu(popupState)}
                 ref={fgRef}
                 width={width ? width - 10 : 0}
                 height={height ? height - 10 : 0}
