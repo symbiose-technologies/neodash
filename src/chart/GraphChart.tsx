@@ -179,8 +179,6 @@ const NeoGraphChart = (props: ChartProps) => {
 
         return {nodes : nodes, links : links};
     }
-    //a = {"nodes" : { 0 : {"name" : "momo"}, 12 : {"name" : "Niels"}, 13 : {"name" : "Jason"}}, "links" : {}}
-    //b = {"nodes" : { 2 : {"name" : "momo2"}, 12 : {"name" : "Niels Reloaded"}, 14 : {"name" : "Harold"}}, "links" : { "re_34" : {"prop" : "RobinHood"}}}
 
     function mergeGraphData(mergeData, operation){
         let nodesState = {... data.nodes};
