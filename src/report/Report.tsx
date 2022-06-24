@@ -89,6 +89,10 @@ export const NeoReport = ({
         const useRecordMapper = REPORT_TYPES[type].useRecordMapper == true;
         const useNodePropsAsFields = REPORT_TYPES[type].useNodePropsAsFields == true;
 
+        settings.q = query;
+        settings.p = parameters;
+        settings.r = refreshRate;
+
         if (debounced) {
             setStatus(QueryStatus.RUNNING)
             debouncedRunCypherQuery(driver, database, query, parameters, selection, fields,
@@ -137,6 +141,7 @@ export const NeoReport = ({
         },
         [],
     );
+
 
     // Draw the report based on the query status.
     if (disabled) {
