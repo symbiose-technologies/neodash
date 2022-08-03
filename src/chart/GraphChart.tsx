@@ -65,7 +65,7 @@ const NeoGraphChart = (props: ChartProps) => {
     const lockable = props.settings && props.settings.lockable !== undefined ? props.settings.lockable : true;
     const drilldownLink = props.settings && props.settings.drilldownLink !== undefined ? props.settings.drilldownLink : "";
     const selfLoopRotationDegrees = 45;
-    const rightClickToExpandNodes = true; // TODO - this isn't working properly yet, disable it.
+    const rightClickToExpandNodes = props.settings && props.settings.rightClickToExpandNodes !== undefined ? props.settings.rightClickToExpandNodes : false; // TODO - this isn't working properly yet, disable it.
     const defaultNodeColor = "lightgrey"; // Color of nodes without labels
     const linkDirectionalParticles = props.settings && props.settings.relationshipParticles ? 5 : undefined;
     const linkDirectionalParticleSpeed = 0.005; // Speed of particles on relationships.
@@ -197,7 +197,7 @@ const NeoGraphChart = (props: ChartProps) => {
 
 
     useEffect(() => {
-        //if (props.settings.r != 0)
+        if (props.settings.r != 0)
             setInterval(() =>
                 props.queryCallback && props.queryCallback(props.settings.q, props.settings.p, setRefreshRecords)
                 , 5000

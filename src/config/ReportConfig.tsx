@@ -191,6 +191,12 @@ export const REPORT_TYPES = {
                 values: [true, false],
                 default: false
             },
+            "rightClickToExpandNodes": {
+                label: "Allow you to expand/collapse the graph from a node",
+                type: SELECTION_TYPES.LIST,
+                values: [true, false],
+                default: false
+            },
             "autorun": {
                 label: "Auto-run query",
                 type: SELECTION_TYPES.LIST,
