@@ -39,3 +39,6 @@ jspm_packages
 
 # Serverless directories
 .serverless
+
+#Symbiose
+.yarn
